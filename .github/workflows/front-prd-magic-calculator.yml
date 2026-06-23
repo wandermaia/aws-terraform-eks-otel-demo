@@ -20,6 +20,7 @@ jobs:
       DB_HOST: ${{ secrets.DB_HOST }}
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      CERTIFICATE_ARN: ${{ secrets.CERTIFICATE_ARN }}
     with:
       aws-region: "us-east-1"
       environment: "prd"

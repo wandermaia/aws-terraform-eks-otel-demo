@@ -91,15 +91,20 @@ apt update && apt upgrade -y
 # Instalar ferramentas essenciais
 apt install -y curl dnsutils iputils-ping telnet net-tools netcat-openbsd gnupg2 wget lsb-release
 
-# teste de conexão na porta do NLB
-export NLB="k8s-ingressn-ingressn-73c3a8ea96-7fc259a7b919a7c0.elb.us-east-1.amazonaws.com"
-nc -z -v ${NLB} 80
-nc -z -v ${NLB} 443
 
-# calculadora-api-dev.wandermaia.com
-# magic-calculator-dev.wandermaia.com
-curl -H "Host: magic-calculator-dev.wandermaia.com" https://${NLB}/frontend -k
-curl -H "Host: calculadora-api-dev.wandermaia.com" https://${NLB}/backend -k
+# Teste API calculadora
+curl -X POST http://calculadora-api.calculator.svc.cluster.local/backend \
+  -H "Content-Type: application/json" \
+  -d '{"nome": "Wander", "operador1": 10, "operador2": 32}'
+
+# Teste API calculadora (erro)
+curl -X POST http://calculadora-api.calculator.svc.cluster.local/backend \
+  -H "Content-Type: application/json" \
+  -d '{"nome": "Wm", "operador1": 10, "operador2": 32}'
+
+# Teste joke-factor
+curl http://joke-factor.calculator.svc.cluster.local/joke
+
 
 ```
 

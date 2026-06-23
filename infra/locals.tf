@@ -22,6 +22,8 @@ locals {
     "joke-factor",
   ]
 
+  name_prefix = "${local.project_name}-${local.environment}"
+
   # Dados para a criação do RDS MySQL
   rds_name                = "rds-msql-${local.project_name}"
   rds_security_group_name = "security-group-${local.rds_name}"

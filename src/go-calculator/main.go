@@ -310,7 +310,9 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 	const insertOperacoes = "INSERT INTO operacoes (nome, operador1, operador2, data_execucao) VALUES (?, ?, ?, ?)"
 
 	// Span filho para rastrear a gravação no banco de dados.
-	dbCtx, span := tracer.Start(ctx, "db.inserir_operacao",
+	dbCtx, dbCancel := context.WithTimeout(ctx, 5*time.Second)
+	defer dbCancel()
+	dbCtx, span := tracer.Start(dbCtx, "db.inserir_operacao",
 		trace.WithSpanKind(trace.SpanKindClient),
 		trace.WithAttributes(
 			attribute.String("db.system", "mysql"),
