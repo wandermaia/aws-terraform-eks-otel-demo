@@ -1,0 +1,23 @@
+global:
+  cloud: aws
+  clusterName: "eks-demo-open-telemetry"
+  deploymentEnvironment: "dev"
+otelCollectorEndpoint: signoz-otel-collector.signoz.svc.cluster.local:4317
+# -- Whether the OTLP endpoint is insecure.
+# Set this to false, in case of secure OTLP endpoint.
+otelInsecure: true
+presets:
+  otlpExporter:
+    enabled: true
+  loggingExporter:
+    enabled: false
+  resourceDetection:
+    detectors:
+      - eks
+      - system
+otelAgent:
+  enabled: true
+  name: "otel-agent"
+otelDeployment:
+  enabled: true
+  name: "otel-deployment"

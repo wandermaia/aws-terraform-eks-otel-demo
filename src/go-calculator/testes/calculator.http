@@ -1,0 +1,58 @@
+# Valida o health da aplicação
+GET http://localhost:7000/backend
+Content-Type: application/json
+
+###
+
+# Valida o health da aplicação
+GET http://localhost:7000/metrics
+Content-Type: application/json
+
+
+###
+# Realiza uma soma.
+POST http://localhost:7000/backend
+Content-Type: application/json
+
+{
+    "nome":"Alguém",
+    "operador1": 4,
+    "operador2": 2
+}
+
+
+###
+
+# Apresenta o erro porque o nome tem menos do que 3 caracteres
+POST http://localhost:7000/backend
+Content-Type: application/json
+
+{
+    "nome":"Al",
+    "operador1": 3,
+    "operador2": 4
+}
+
+
+###
+# Apresenta erro por tentar usar números reais
+POST http://localhost:7000/backend
+Content-Type: application/json
+
+{
+    "nome":"Alguém",
+    "operador1": 3.2,
+    "operador2": 4
+}
+
+
+###
+# Apresenta erro por tentar enviar string
+POST http://localhost:7000/backend
+Content-Type: application/json
+
+{
+    "nome":"Alguém",
+    "operador1": "3",
+    "operador2": 4
+}

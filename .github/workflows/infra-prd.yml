@@ -1,0 +1,21 @@
+name: "INFRA - PRD DEPLOY"
+
+# TODO: antes de ativar esta pipeline, criar env/prd/terraform.tfvars e env/prd/backend.hcl
+# com os valores corretos para o ambiente de produção.
+
+on:
+  workflow_dispatch:
+
+# Permission can be added at job level or workflow level
+permissions:
+  contents: read
+
+jobs:
+  terraform:
+    uses: ./.github/workflows/terraform.yml
+    with:
+      environment: prd
+      aws-region: "us-east-1"
+    secrets:
+      aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
