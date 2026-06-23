@@ -85,11 +85,8 @@ https://docs.aws.amazon.com/pt_br/eks/latest/userguide/auto-configure-alb.html
 # Iniciar o POD utilizando a imagem do ubuntu 24.04
 kubectl run ubuntu-test -it --rm --image=ubuntu:24.04 -- /bin/bash
 
-# Atualizar o repositório e os pacotes 24.04
-apt update && apt upgrade -y
-
-# Instalar ferramentas essenciais
-apt install -y curl dnsutils iputils-ping telnet net-tools netcat-openbsd gnupg2 wget lsb-release
+# Atualizar o repositório e os pacotes 24.04 e instalar ferramentas essenciais
+apt update && apt upgrade -y && apt install -y curl dnsutils iputils-ping telnet net-tools netcat-openbsd gnupg2 wget lsb-release mysql-client
 
 
 # Teste API calculadora
@@ -105,6 +102,16 @@ curl -X POST http://calculadora-api.calculator.svc.cluster.local/backend \
 # Teste joke-factor
 curl http://joke-factor.calculator.svc.cluster.local/joke
 
+
+# Conectar no mysql
+mysql -h mysql-lab.wandermaia.com -u admin_user -P 3306 -p
+# SenhaSegura123!
+
+# show databases;
+# use mydb;
+# show tables;
+# select * from operacoes;
+# select * from piadas;
 
 ```
 
