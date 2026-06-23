@@ -282,6 +282,35 @@ O SigNoz é acessível via ALB externo após o provisionamento. O OTel Collector
 
 ## Referências
 
-Kubernetes Dashboards
+### OpenTelemetry
 
-https://signoz.io/docs/dashboards/dashboard-templates/kubernetes-dashboards/
+- [W3C TraceContext — especificação do header `traceparent`](https://www.w3.org/TR/trace-context/)
+- [OpenTelemetry SDK Go](https://opentelemetry.io/docs/languages/go/)
+- [OpenTelemetry SDK Python](https://opentelemetry.io/docs/languages/python/)
+- [OpenTelemetry Semantic Conventions](https://opentelemetry.io/docs/specs/semconv/)
+
+### SigNoz
+
+- [Instalação do SigNoz no Kubernetes (Helm)](https://signoz.io/docs/install/kubernetes/)
+- [k8s-infra chart - coleta de métricas e logs do cluster](https://signoz.io/docs/tutorial/kubernetes-infra-metrics/)
+- [Kubernetes Dashboards](https://signoz.io/docs/dashboards/dashboard-templates/kubernetes-dashboards/)
+
+### AWS / EKS
+
+- [EKS Auto Mode](https://docs.aws.amazon.com/eks/latest/userguide/automode.html)
+- [EKS Blueprints Addons (Terraform)](https://aws-ia.github.io/terraform-aws-eks-blueprints-addons/)
+- [Karpenter — NodePool e EC2NodeClass](https://karpenter.sh/docs/)
+- [AWS Load Balancer Controller](https://kubernetes-sigs.github.io/aws-load-balancer-controller/)
+
+### Terraform
+
+- [Terraform AWS Provider](https://registry.terraform.io/providers/hashicorp/aws/latest/docs)
+- [Módulo terraform-aws-eks](https://registry.terraform.io/modules/terraform-aws-modules/eks/aws/latest)
+- [Módulo terraform-aws-vpc](https://registry.terraform.io/modules/terraform-aws-modules/vpc/aws/latest)
+- [Módulo terraform-aws-rds](https://registry.terraform.io/modules/terraform-aws-modules/rds/aws/latest)
+
+### APIs e bibliotecas
+
+- [Chuck Norris API](https://api.chucknorris.io/)
+- [go-chi/chi - router HTTP para Go](https://github.com/go-chi/chi)
+- [Flask — framework web Python](https://flask.palletsprojects.com/)
