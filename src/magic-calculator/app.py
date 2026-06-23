@@ -162,7 +162,7 @@ def index():
             propagate.inject(headers)
 
             try:
-                response = requests.post(API_URL, json=data, headers=headers)
+                response = requests.post(API_URL, json=data, headers=headers, timeout=10)
                 response.raise_for_status()  # Lança exceção para status HTTP de erro (4xx, 5xx).
                 span.set_attribute('http.status_code', response.status_code)
                 payload = response.json()

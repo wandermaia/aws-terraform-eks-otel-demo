@@ -65,6 +65,8 @@ type JokeResponse struct {
 var db *sql.DB
 var tracer trace.Tracer
 
+var httpClient = &http.Client{Timeout: 3 * time.Second}
+
 // dbName e dbHost armazenam as coordenadas do banco para uso nos atributos dos spans.
 var dbName, dbHost string
 
@@ -182,7 +184,7 @@ func fetchJoke(ctx context.Context) (*ChuckNorrisJoke, error) {
 		return nil, fmt.Errorf("erro ao criar requisição HTTP: %w", err)
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())

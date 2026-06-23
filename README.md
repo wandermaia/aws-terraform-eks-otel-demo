@@ -48,6 +48,14 @@ A propagação de contexto usa o header HTTP **W3C TraceContext** (`traceparent`
 
 Cada span carrega atributos de contexto (nome do usuário, operandos, resultado) e o `trace_id` propaga pela cadeia inteira, permitindo visualizar a requisição de ponta a ponta no SigNoz como um único trace com cinco spans aninhados.
 
+### Timeouts configurados
+
+| Camada | Timeout | Detalhe |
+|---|---|---|
+| `magic-calculator` → `go-calculator` | 10 s | `requests.post(..., timeout=10)` |
+| `go-calculator` → MySQL (`db.inserir_operacao`) | 5 s | `context.WithTimeout` no `db.ExecContext` |
+| `joke-factor` → `api.chucknorris.io` | 3 s | `http.Client{Timeout: 3s}` dedicado |
+
 ## Visão geral da arquitetura
 
 ```mermaid
