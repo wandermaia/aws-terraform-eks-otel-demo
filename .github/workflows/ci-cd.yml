@@ -39,6 +39,8 @@ on:
         required: true
       DOCKERHUB_TOKEN:
         required: true
+      CERTIFICATE_ARN:
+        required: false
 
 jobs:
   CI:
@@ -106,6 +108,7 @@ jobs:
           USUARIO_BANCO: ${{ secrets.DB_USER }}
           SENHA_BANCO: ${{ secrets.DB_PASSWORD }}
           DB_HOST: ${{ secrets.DB_HOST }}
+          CERTIFICATE_ARN: ${{ secrets.CERTIFICATE_ARN }}
           IMAGEM: ${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecr-repository }}:${{ inputs.environment }}-${{ github.run_number }}
         with:
           path: ${{ inputs.app-path }}
