@@ -109,9 +109,14 @@ A propagação usa W3C TraceContext (`traceparent`) em todas as chamadas HTTP en
 │   │       ├── backend.hcl             # Configuração do backend S3
 │   │       ├── terraform.tfvars        # Variáveis do ambiente lab
 │   │       └── K8s-Infra-value.yaml    # Values do chart k8s-infra (OTel)
+│   ├── modules/
+│   │   └── rds/                        # Módulo local — RDS MySQL + Security Group
+│   │       ├── main.tf
+│   │       ├── variables.tf
+│   │       └── outputs.tf
 │   ├── Makefile                        # Atalhos para comandos Terraform
 │   ├── destroy_config.json             # Controla destroy vs apply nas pipelines
-│   └── *.tf                            # Módulos e recursos Terraform
+│   └── *.tf                            # Recursos Terraform raiz
 │
 └── src/                                # Aplicações de exemplo
     ├── docker-compose.yml              # Sobe todo o stack localmente
@@ -138,9 +143,9 @@ A propagação usa W3C TraceContext (`traceparent`) em todas as chamadas HTTP en
 | Karpenter NodePool | Instâncias `t/c/m/r`, `medium` a `4xlarge`, spot + on-demand |
 | SigNoz | Instalado via Helm no namespace `signoz` |
 | OTel Collector | Chart `k8s-infra` do SigNoz, coleta métricas do cluster |
-| RDS MySQL 8.0 | `db.t4g.micro`, nas subnets de database |
+| RDS MySQL 8.0 | `db.t4g.micro`, nas subnets de database — provisionado via módulo local `modules/rds` |
 | ECR | `calculadora-backend`, `calculadora-frontend`, `joke-factor` |
-| ACM | Certificado auto-assinado para HTTPS no ALB do SigNoz |
+| ACM | Certificado auto-assinado para HTTPS no ALB do SigNoz e do frontend |
 | StorageClass | `sc-ebs-gp3-encrypted` como padrão do cluster |
 | IngressClass | `alb-internal` (padrão) e `alb-external` |
 
@@ -177,6 +182,7 @@ Interface web em Python/Flask. O usuário informa seu nome e dois números intei
 - **ECR:** `calculadora-frontend`
 - **Endpoint de health:** `GET /frontend`
 - **Variável de ambiente:** `API_URL` aponta para o go-calculator via service interno do K8s
+- **Ingress:** ALB externo com HTTPS (redirect HTTP→443), `ingressClassName: alb-external`
 
 ### go-calculator (backend)
 
@@ -245,6 +251,7 @@ O workflow reutilizável `ci-cd.yml` executa dois jobs em sequência:
 | `DB_USER` | Usuário do banco de dados |
 | `DB_PASSWORD` | Senha do banco de dados |
 | `DB_HOST` | Endpoint do RDS MySQL |
+| `CERTIFICATE_ARN` | ARN do certificado ACM (output do Terraform) — usado no Ingress do frontend |
 | `DOCKERHUB_USERNAME` | Usuário do Docker Hub (evita rate limit de pull anônimo) |
 | `DOCKERHUB_TOKEN` | Access Token do Docker Hub (gerado em Account Settings → Security) |
 

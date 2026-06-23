@@ -14,5 +14,5 @@ resource "aws_route53_record" "dns-mysql" {
   name    = "mysql-${local.environment}.wandermaia.com"
   type    = "CNAME"
   ttl     = 300
-  records = ["${aws_db_instance.db_mysql.address}"]
+  records = [module.rds.db_endpoint]
 }
