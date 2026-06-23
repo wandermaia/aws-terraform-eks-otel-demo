@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Calculadora Chuck Norris</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600&display=swap');
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            min-height: 100vh;
+            background: #1a1a2e;
+            background-image:
+                radial-gradient(ellipse at top, #e94560 0%, transparent 60%),
+                radial-gradient(ellipse at bottom, #0f3460 0%, transparent 70%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Inter', sans-serif;
+            padding: 20px;
+        }
+
+        .hero {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: -10px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .hero img {
+            width: 160px;
+            filter: drop-shadow(0 0 24px rgba(233, 69, 96, 0.7)) grayscale(0.3);
+            animation: shake 0.5s ease-in-out 0.3s;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%       { transform: translateX(-6px) rotate(-2deg); }
+            40%       { transform: translateX(6px) rotate(2deg); }
+            60%       { transform: translateX(-4px); }
+            80%       { transform: translateX(4px); }
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(233, 69, 96, 0.6);
+            border-radius: 16px;
+            padding: 32px 36px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05);
+            text-align: center;
+        }
+
+        h1 {
+            font-family: 'Bebas Neue', 'Impact', sans-serif;
+            font-size: 2.4rem;
+            letter-spacing: 3px;
+            color: #e94560;
+            text-shadow: 0 0 20px rgba(233, 69, 96, 0.6);
+            margin-bottom: 16px;
+        }
+
+        .error-box {
+            background: rgba(233, 69, 96, 0.1);
+            border: 1px solid rgba(233, 69, 96, 0.4);
+            border-radius: 8px;
+            padding: 14px 18px;
+            margin-bottom: 28px;
+            color: rgba(255,255,255,0.7);
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 12px 32px;
+            background: transparent;
+            color: #e94560;
+            font-family: 'Bebas Neue', 'Impact', sans-serif;
+            font-size: 1.1rem;
+            letter-spacing: 3px;
+            border: 2px solid #e94560;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background 0.2s, color 0.2s, transform 0.15s;
+        }
+
+        .btn:hover {
+            background: #e94560;
+            color: #fff;
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <div class="hero">
+        <img src="{{ url_for('img', filename='chuck.png') }}" alt="Chuck Norris">
+    </div>
+    <div class="card">
+        <h1>Chuck Reprova.</h1>
+        <div class="error-box">{{ error }}</div>
+        <a href="{{ url_for('voltar') }}" class="btn">TENTAR NOVAMENTE</a>
+    </div>
+</body>
+</html>

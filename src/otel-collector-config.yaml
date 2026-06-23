@@ -1,0 +1,35 @@
+# Configuração do OpenTelemetry Collector.
+#
+# O Collector recebe spans das aplicações (go-calculator e magic-calculator)
+# via gRPC OTLP na porta 4317, processa e exporta para o Jaeger.
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317   # Porta gRPC utilizada pelas aplicações
+
+processors:
+  batch:
+    # Agrupa spans antes de exportar para reduzir o número de requisições.
+    timeout: 5s
+    send_batch_size: 512
+
+exporters:
+  otlp/jaeger:
+    # Exporta os traces para o Jaeger via OTLP gRPC.
+    endpoint: jaeger:4317
+    tls:
+      insecure: true
+
+  debug:
+    # Exibe um resumo dos spans no log do Collector (útil para depuração).
+    verbosity: basic
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp/jaeger, debug]
+

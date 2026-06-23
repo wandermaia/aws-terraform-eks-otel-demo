@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Calculadora Chuck Norris</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600&display=swap');
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            min-height: 100vh;
+            background: #1a1a2e;
+            background-image:
+                radial-gradient(ellipse at top, #e94560 0%, transparent 60%),
+                radial-gradient(ellipse at bottom, #0f3460 0%, transparent 70%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Inter', sans-serif;
+            padding: 20px;
+        }
+
+        .hero {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: -10px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .hero img {
+            width: 180px;
+            filter: drop-shadow(0 0 24px rgba(233, 69, 96, 0.7));
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50%       { transform: translateY(-8px); }
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(233, 69, 96, 0.4);
+            border-radius: 16px;
+            padding: 32px 36px;
+            width: 100%;
+            max-width: 380px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05);
+            position: relative;
+            z-index: 1;
+        }
+
+        h1 {
+            font-family: 'Bebas Neue', 'Impact', sans-serif;
+            font-size: 2.4rem;
+            letter-spacing: 3px;
+            text-align: center;
+            color: #fff;
+            text-shadow: 0 0 20px rgba(233, 69, 96, 0.8);
+            margin-bottom: 4px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #e94560;
+            font-size: 0.85rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 28px;
+        }
+
+        .error-msg {
+            background: rgba(233, 69, 96, 0.15);
+            border: 1px solid #e94560;
+            color: #ff7c8e;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            margin-bottom: 18px;
+            text-align: center;
+        }
+
+        label {
+            display: block;
+            color: rgba(255,255,255,0.6);
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+            margin-top: 16px;
+        }
+
+        input[type="text"],
+        input[type="number"] {
+            width: 100%;
+            padding: 11px 14px;
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 1rem;
+            font-family: 'Inter', sans-serif;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            outline: none;
+        }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus {
+            border-color: #e94560;
+            box-shadow: 0 0 0 3px rgba(233, 69, 96, 0.2);
+        }
+
+        input[type="number"] { appearance: textfield; }
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+        .btn {
+            display: block;
+            width: 100%;
+            margin-top: 26px;
+            padding: 14px;
+            background: linear-gradient(135deg, #e94560, #c0392b);
+            color: #fff;
+            font-family: 'Bebas Neue', 'Impact', sans-serif;
+            font-size: 1.3rem;
+            letter-spacing: 3px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.15s;
+            box-shadow: 0 4px 16px rgba(233, 69, 96, 0.5);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(233, 69, 96, 0.7);
+        }
+
+        .btn:active { transform: translateY(0); }
+    </style>
+</head>
+<body>
+    <div class="hero">
+        <img src="{{ url_for('img', filename='chuck.png') }}" alt="Chuck Norris">
+    </div>
+    <div class="card">
+        <h1>Calculadora<br>Chuck Norris</h1>
+        <p class="subtitle">Some dois números. Receba sabedoria.</p>
+
+        {% if error %}
+            <div class="error-msg">{{ error }}</div>
+        {% endif %}
+
+        <form method="post">
+            <label for="nome">Seu Nome</label>
+            <input type="text" id="nome" name="nome" placeholder="Digite seu nome" autocomplete="off">
+
+            <label for="operador1">Primeiro Número</label>
+            <input type="number" id="operador1" name="operador1" value="0">
+
+            <label for="operador2">Segundo Número</label>
+            <input type="number" id="operador2" name="operador2" value="0">
+
+            <button type="submit" class="btn">CALCULAR</button>
+        </form>
+    </div>
+</body>
+</html>

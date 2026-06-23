@@ -1,0 +1,30 @@
+name: "API - CALCULADORA DEPLOY (LAB)"
+
+on:
+  push:
+    branches: ["lab"]
+    paths: ["src/go-calculator/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  CI-CD:
+    uses: ./.github/workflows/ci-cd.yml
+    secrets:
+      aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      DB_USER: ${{ secrets.DB_USER }}
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      DB_HOST: ${{ secrets.DB_HOST }}
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+    with:
+      aws-region: "us-west-2"
+      environment: "lab"
+      app-name: "calculadora-api"
+      app-path: "src/go-calculator"
+      ecr-repository: "calculadora-backend"
+      eks-cluster-name: "eks-demo-open-telemetry"
+      app-namespace-kubernetes: "calculator"

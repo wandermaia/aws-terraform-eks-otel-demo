@@ -1,0 +1,23 @@
+name: "INFRA - LAB DEPLOY"
+
+on:
+  push:
+    branches: ["lab"]
+    paths: ["infra/**"]
+  workflow_dispatch:
+    
+
+# Permission can be added at job level or workflow level    
+permissions:
+  contents: read
+
+jobs:
+  terraform:
+    uses: ./.github/workflows/terraform.yml
+    with:
+      environment: lab
+      aws-region: "us-west-2"
+    secrets:
+      aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+

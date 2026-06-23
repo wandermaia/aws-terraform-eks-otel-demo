@@ -1,0 +1,109 @@
+services:
+
+  # ---------------------------------------------------------------------------
+  # Banco de dados
+  # ---------------------------------------------------------------------------
+  database:
+    container_name: mysql-8
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: go-calculator
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "--silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ---------------------------------------------------------------------------
+  # Observabilidade — Jaeger (visualização de traces)
+  # ---------------------------------------------------------------------------
+  jaeger:
+    container_name: jaeger
+    image: jaegertracing/all-in-one:latest
+    restart: always
+    ports:
+      - "16686:16686"  # UI web do Jaeger — acesse http://localhost:16686
+      - "4317:4317"    # Recebe traces do Collector via OTLP gRPC (interno)
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+
+  # ---------------------------------------------------------------------------
+  # Observabilidade — OpenTelemetry Collector
+  # ---------------------------------------------------------------------------
+  otel-collector:
+    container_name: otel-collector
+    image: otel/opentelemetry-collector-contrib:latest
+    restart: always
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml
+    ports:
+      - "4318:4317"  # Expõe a porta gRPC do Collector para o host (opcional, para testes locais)
+    depends_on:
+      - jaeger
+
+  # ---------------------------------------------------------------------------
+  # API — joke-factor
+  # ---------------------------------------------------------------------------
+  joke-factor:
+    container_name: joke-factor
+    build: ./joke-factor
+    ports:
+      - "8000:8000"
+    environment:
+      DB_USER: root
+      DB_PASSWORD: password
+      DB_HOST: database
+      DB_NAME: go-calculator
+      OTEL_EXPORTER_OTLP_ENDPOINT: otel-collector:4317
+    depends_on:
+      database:
+        condition: service_healthy
+      otel-collector:
+        condition: service_started
+
+  # ---------------------------------------------------------------------------
+  # API — go-calculator
+  # ---------------------------------------------------------------------------
+  api:
+    container_name: go-calculator
+    build: ./go-calculator
+    ports:
+      - "7000:7000"
+    environment:
+      DB_USER: root
+      DB_PASSWORD: password
+      DB_HOST: database
+      DB_NAME: go-calculator
+      OTEL_EXPORTER_OTLP_ENDPOINT: otel-collector:4317  # Endereço do Collector
+      JOKE_FACTOR_URL: http://joke-factor:8000/joke
+    depends_on:
+      database:
+        condition: service_healthy
+      otel-collector:
+        condition: service_started
+      joke-factor:
+        condition: service_started
+
+  # ---------------------------------------------------------------------------
+  # Frontend — magic-calculator
+  # ---------------------------------------------------------------------------
+  frontend:
+    container_name: front-magic-calculator
+    build:
+      context: ./magic-calculator
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    environment:
+      API_URL: http://api:7000/backend
+      OTEL_EXPORTER_OTLP_ENDPOINT: otel-collector:4317  # Endereço do Collector
+    depends_on:
+      - api
+      - otel-collector

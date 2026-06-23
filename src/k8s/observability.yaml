@@ -1,0 +1,214 @@
+# Manifesto de observabilidade — OpenTelemetry Collector + Jaeger
+#
+# Todos os recursos são criados no namespace "observability".
+# Os serviços de aplicação (magic-calculator e calculadora-api) enviam
+# traces para o otel-collector via gRPC (porta 4317). O Collector processa
+# e encaminha os traces para o Jaeger, cuja UI fica disponível na porta 16686.
+#
+# A configuração do Collector é fornecida via ConfigMap montado em
+# /etc/otelcol-contrib/config.yaml dentro do container.
+#
+# Fluxo:
+#   magic-calculator ──┐
+#                      ├──► otel-collector:4317 ──► jaeger:4317
+#   calculadora-api  ──┘
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: observability
+
+# ---------------------------------------------------------------------------
+# ConfigMap — configuração do OpenTelemetry Collector
+# ---------------------------------------------------------------------------
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-collector-config
+  namespace: observability
+data:
+  config.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+
+    processors:
+      batch:
+        timeout: 5s
+        send_batch_size: 512
+
+    exporters:
+      otlp/jaeger:
+        endpoint: jaeger:4317
+        tls:
+          insecure: true
+      debug:
+        verbosity: basic
+
+    service:
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [batch]
+          exporters: [otlp/jaeger, debug]
+
+# ---------------------------------------------------------------------------
+# Deployment — OpenTelemetry Collector
+# ---------------------------------------------------------------------------
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel-collector
+  namespace: observability
+  labels:
+    app: otel-collector
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: otel-collector
+  template:
+    metadata:
+      labels:
+        app: otel-collector
+    spec:
+      containers:
+      - name: otel-collector
+        image: otel/opentelemetry-collector-contrib:latest
+        args:
+          - --config=/etc/otelcol-contrib/config.yaml
+        ports:
+        - containerPort: 4317
+          name: otlp-grpc
+          protocol: TCP
+        volumeMounts:
+        - name: config
+          mountPath: /etc/otelcol-contrib/config.yaml
+          subPath: config.yaml
+        resources:
+          limits:
+            cpu: 200m
+            memory: 256Mi
+          requests:
+            cpu: 50m
+            memory: 128Mi
+      volumes:
+      - name: config
+        configMap:
+          name: otel-collector-config
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 10
+
+# ---------------------------------------------------------------------------
+# Service — OpenTelemetry Collector (ClusterIP)
+# Acessível pelos outros namespaces via:
+#   otel-collector.observability.svc.cluster.local:4317
+# ---------------------------------------------------------------------------
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: otel-collector
+  namespace: observability
+  labels:
+    app: otel-collector
+spec:
+  selector:
+    app: otel-collector
+  ports:
+  - name: otlp-grpc
+    port: 4317
+    targetPort: 4317
+    protocol: TCP
+  type: ClusterIP
+
+# ---------------------------------------------------------------------------
+# Deployment — Jaeger (all-in-one)
+# ---------------------------------------------------------------------------
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jaeger
+  namespace: observability
+  labels:
+    app: jaeger
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jaeger
+  template:
+    metadata:
+      labels:
+        app: jaeger
+    spec:
+      containers:
+      - name: jaeger
+        image: jaegertracing/all-in-one:latest
+        env:
+        - name: COLLECTOR_OTLP_ENABLED
+          value: "true"
+        ports:
+        - containerPort: 16686
+          name: ui
+          protocol: TCP
+        - containerPort: 4317
+          name: otlp-grpc
+          protocol: TCP
+        resources:
+          limits:
+            cpu: 200m
+            memory: 256Mi
+          requests:
+            cpu: 50m
+            memory: 128Mi
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 10
+
+# ---------------------------------------------------------------------------
+# Service — Jaeger (ClusterIP interno + LoadBalancer para a UI)
+# ---------------------------------------------------------------------------
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jaeger
+  namespace: observability
+  labels:
+    app: jaeger
+spec:
+  selector:
+    app: jaeger
+  ports:
+  - name: otlp-grpc
+    port: 4317
+    targetPort: 4317
+    protocol: TCP
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jaeger-ui
+  namespace: observability
+  labels:
+    app: jaeger
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-backend-protocol: tcp
+    service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "true"
+    service.beta.kubernetes.io/aws-load-balancer-internal: "true"
+    service.beta.kubernetes.io/aws-load-balancer-type: nlb
+spec:
+  selector:
+    app: jaeger
+  ports:
+  - name: ui
+    port: 80
+    targetPort: 16686
+    protocol: TCP
+  type: LoadBalancer
