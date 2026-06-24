@@ -116,7 +116,7 @@ func initTracer(ctx context.Context) (func(context.Context) error, error) {
 	collectorAddr := os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
 	if collectorAddr == "" {
 		collectorAddr = "localhost:4317"
-		log.Println("OTEL_EXPORTER_OTLP_ENDPOINT não definido, usando padrão:", collectorAddr)
+		log.Println("OTEL_EXPORTER_OTLP_ENDPOINT não definido, usando padrão: ", collectorAddr)
 	}
 
 	conn, err := grpc.NewClient(collectorAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
