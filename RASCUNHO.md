@@ -56,22 +56,23 @@ signoz         	https://charts.signoz.io
 helm search repo signoz
 
 
-wander@aspire:~$ helm search repo signoz
+wander@aspire:~/repos/aws-terraform-eks-otel-demo$ helm search repo signoz
 NAME                      	CHART VERSION	APP VERSION	DESCRIPTION                                       
-signoz/signoz             	0.115.0      	v0.115.0   	SigNoz Observability Platform Helm Chart          
+signoz/signoz             	0.140.0      	v0.140.0   	SigNoz Observability Platform Helm Chart          
+signoz/signoz-operator    	0.0.1        	v0.0.1     	Helm chart for the SigNoz Kubernetes operator     
 signoz/signoz-otel-gateway	0.0.4        	v0.0.16    	A Helm chart for deploying SigNoz Opentelemetry...
 signoz/alertmanager       	0.5.2        	0.5.0      	The Alertmanager handles alerts for SigNoz.       
 signoz/clickhouse         	24.1.18      	24.1.2     	A Helm chart for ClickHouse                       
-signoz/k8s-infra          	0.15.0       	0.139.0    	Helm chart for collecting metrics and logs in K8s 
+signoz/k8s-infra                0.17.1          0.139.0         Helm chart for collecting metrics and logs in K8s 
 signoz/postgresql         	0.0.2        	15.0.0     	A Helm Chart for PostgreSQL                       
 signoz/zookeeper          	0.0.1        	3.8.1      	Bitnami Helm chart for Zookeeper                  
-wander@aspire:~$
+wander@aspire:~/repos/aws-terraform-eks-otel-demo$
 
 
 
 helm pull signoz/signoz
 
-tar -xvzf signoz-0.115.0.tgz
+tar -xvzf signoz-0.140.0.tgz
 
 
 ```
