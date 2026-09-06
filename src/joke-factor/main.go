@@ -73,7 +73,7 @@ var dbName, dbHost string
 var (
 	totalGets = promauto.NewCounter(prometheus.CounterOpts{
 		Name: "joke_factor_total_gets",
-		Help: "Numero total de requisições GET processadas. ",
+		Help: "Numero total de requisições GET processadas.",
 	})
 	totalErros = promauto.NewCounter(prometheus.CounterOpts{
 		Name: "joke_factor_total_errors",

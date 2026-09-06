@@ -9,6 +9,8 @@ otelInsecure: true
 presets:
   otlpExporter:
     enabled: true
+  otlphttpExporter:
+    enabled: false
   loggingExporter:
     enabled: false
   resourceDetection:
