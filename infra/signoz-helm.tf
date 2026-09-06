@@ -11,7 +11,7 @@ resource "helm_release" "signoz" {
   chart            = "signoz"
   namespace        = local.observability_namespace_k8s
   create_namespace = true
-  version          = "0.116.2"
+  version          = "0.140.0"
 
   # Ajustando os recursos de memória para o clickhouse, para evitar que o pod fique em crashloopbackoff por falta de memória.
   set {
@@ -39,7 +39,7 @@ resource "helm_release" "opentelemetry_eks" {
   repository = "https://charts.signoz.io"
   chart      = "k8s-infra"
   namespace  = local.observability_namespace_k8s
-  version    = "0.15.0"
+  version    = "0.17.1"
 
   values = [
     file("./env/${local.environment}/K8s-Infra-value.yaml")

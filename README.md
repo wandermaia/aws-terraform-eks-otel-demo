@@ -2,6 +2,21 @@
 
 Demo de observabilidade com OpenTelemetry e SigNoz rodando em Amazon EKS. O projeto provisiona toda a infraestrutura via Terraform e faz o deploy de três aplicações de exemplo que se comunicam entre si e enviam traces distribuídos para o SigNoz APM.
 
+## Índice
+
+- [A aplicação de demonstração](#a-aplicação-de-demonstração)
+- [Visão geral da arquitetura](#visão-geral-da-arquitetura)
+- [Trace distribuído](#trace-distribuído)
+- [Arquitetura de rede](#arquitetura-de-rede)
+- [Estrutura do repositório](#estrutura-do-repositório)
+- [Infraestrutura (Terraform)](#infraestrutura-terraform)
+- [Aplicações](#aplicações)
+- [Banco de dados](#banco-de-dados)
+- [Pipelines CI/CD (GitHub Actions)](#pipelines-cicd-github-actions)
+- [Como executar localmente](#como-executar-localmente)
+- [Observabilidade](#observabilidade)
+- [Referências](#referências)
+
 ## A aplicação de demonstração
 
 A demo simula uma calculadora com personalidade: o usuário informa seu nome e dois inteiros e recebe o resultado da soma acompanhado de uma frase aleatória do Chuck Norris. Por baixo desse fluxo simples, três serviços se comunicam em cadeia, cada um instrumentado com OpenTelemetry, gerando um trace distribuído completo visível no SigNoz.
@@ -107,6 +122,62 @@ graph TD
 
 A propagação usa W3C TraceContext (`traceparent`) em todas as chamadas HTTP entre serviços.
 
+## Arquitetura de rede
+
+A VPC é dividida em 2 AZs, cada uma com três camadas de subnet (pública, privada e de banco de dados), seguindo o padrão de isolamento por camada:
+
+```mermaid
+graph TB
+    subgraph AWS["AWS us-west-2"]
+        IGW["Internet Gateway"]
+
+        subgraph VPC["VPC vpc-eks-demo-open-telemetry (10.45.0.0/16)"]
+            subgraph AZA["AZ us-west-2a"]
+                PubA["Subnet pública<br/>10.45.48.0/24"]
+                PrivA["Subnet privada<br/>10.45.4.0/22"]
+                DbA["Subnet database<br/>10.45.0.0/24"]
+            end
+
+            subgraph AZB["AZ us-west-2b"]
+                PubB["Subnet pública<br/>10.45.49.0/24"]
+                PrivB["Subnet privada<br/>10.45.8.0/22"]
+                DbB["Subnet database<br/>10.45.1.0/24"]
+            end
+
+            NAT["NAT Gateway<br/>(single, na subnet pública AZ-a)"]
+            ALBExt["ALB externo<br/>ingressClass: alb-external<br/>(HTTPS, frontend)"]
+            ALBInt["ALB interno<br/>ingressClass: alb-internal<br/>(padrão, SigNoz)"]
+            EKSNodes["Nós EKS Auto Mode<br/>(Karpenter NodePool)<br/>magic / calculator / signoz"]
+            RDS["RDS MySQL 8.0<br/>db.t4g.micro<br/>Multi-AZ subnet group"]
+            R53["Route53 private zone<br/>wandermaia.com<br/>CNAME mysql-lab.wandermaia.com"]
+        end
+    end
+
+    Internet(("Internet"))
+
+    Internet --> IGW
+    IGW --> PubA
+    IGW --> PubB
+    PubA --> NAT
+    PubA --> ALBExt
+    PubB --> ALBExt
+    NAT --> PrivA
+    NAT --> PrivB
+    ALBExt --> EKSNodes
+    ALBInt --> EKSNodes
+    PrivA --> EKSNodes
+    PrivB --> EKSNodes
+    EKSNodes -->|"3306"| RDS
+    RDS --- DbA
+    RDS --- DbB
+    R53 -.->|resolve interno| RDS
+```
+
+- **Subnets públicas**: hospedam o NAT Gateway (single, para reduzir custo) e recebem tráfego do ALB externo (`alb-external`) que expõe o frontend via HTTPS.
+- **Subnets privadas**: hospedam os nós do EKS Auto Mode provisionados pelo Karpenter; sem IP público, saem para a internet via NAT Gateway (necessário para pull de imagens públicas e chamada à `api.chucknorris.io`).
+- **Subnets database**: isoladas, sem rota para a internet; o RDS MySQL só aceita conexões na porta 3306 vindas dos CIDRs das subnets privadas (security group dedicado).
+- **Route53 private zone** (`wandermaia.com`): resolve o endpoint do RDS internamente via CNAME, usado pelas aplicações no lugar do endpoint público do RDS.
+
 ## Estrutura do repositório
 
 ```
@@ -156,6 +227,54 @@ A propagação usa W3C TraceContext (`traceparent`) em todas as chamadas HTTP en
 | ACM | Certificado auto-assinado para HTTPS no ALB do SigNoz e do frontend |
 | StorageClass | `sc-ebs-gp3-encrypted` como padrão do cluster |
 | IngressClass | `alb-internal` (padrão) e `alb-external` |
+
+### Como o Terraform cria a infraestrutura
+
+O código está organizado como um único state raiz (`infra/*.tf`, sem módulos remotos além de VPC/EKS/RDS), com dependências implícitas (referência a outputs) e explícitas (`depends_on`) entre os recursos. O fluxo de criação segue, em linhas gerais, esta ordem:
+
+```mermaid
+graph TD
+    VPC["module.vpc<br/>VPC + subnets + NAT + IGW"]
+    IAM["aws_iam_role.eks_auto_node_role<br/>(eks-iam.tf)"]
+    SG["Security Groups<br/>(EKS adicional + MySQL)"]
+    EKS["module.eks_cluster<br/>EKS Auto Mode"]
+    SC["StorageClass gp3<br/>(default)"]
+    IC["IngressClass<br/>alb-internal / alb-external"]
+    NP["Karpenter NodePool<br/>(eks-nodepool.tf)"]
+    ADDONS["module.eks_blueprints_addons<br/>(metrics-server, etc.)"]
+    RDS["aws_db_instance.db_mysql"]
+    R53["Route53 private zone + CNAME"]
+    ECR["ECR repos<br/>(backend, frontend, joke-factor)"]
+    ACM["Certificado auto-assinado (ACM)"]
+    SIGNOZ["Helm release SigNoz<br/>+ k8s-infra (OTel Collector)"]
+
+    VPC --> EKS
+    IAM --> EKS
+    SG --> EKS
+    EKS --> SC
+    EKS --> NP
+    SC --> IC
+    NP --> IC
+    IC --> ADDONS
+    VPC --> RDS
+    SG --> RDS
+    RDS --> R53
+    ADDONS --> SIGNOZ
+    IC --> SIGNOZ
+    ACM --> IC
+    ECR
+```
+
+1. **Rede** (`vpc.tf`): cria a VPC, subnets (pública/privada/database), NAT Gateway e Internet Gateway via módulo `terraform-aws-modules/vpc/aws`.
+2. **IAM e Security Groups** (`eks-iam.tf`, `eks-security-groups.tf`, `rds-security-groups.tf`): criam a role usada pelos nós do Karpenter e os security groups do cluster e do MySQL, consumidos pelos recursos seguintes.
+3. **EKS Auto Mode** (`eks.tf`): sobe o cluster (`terraform-aws-modules/eks/aws`) nas subnets privadas, com `compute_config.enabled = true` e node pool customizado (sem o pool padrão da AWS).
+4. **StorageClass, IngressClass e NodePool** (`eks-storage-class.tf`, `eks-ingress-class.tf`, `eks-nodepool.tf`): objetos Kubernetes aplicados via `kubectl_manifest`, que dependem do cluster já existir.
+5. **EKS Blueprints Addons** (`eks-blueprints-addons.tf`): instala addons de suporte (ex.: metrics-server), com `depends_on` explícito no `IngressClass` interno.
+6. **RDS** (`rds.tf`) e **Route53** (`route53.tf`): o MySQL é criado nas subnets de database usando o security group dedicado; o CNAME privado é criado logo em seguida, apontando para o endpoint do RDS.
+7. **ECR** (`ecr.tf`) e **ACM** (`certificado-auto-assinado.tf`): recursos paralelos, sem dependência direta do cluster; o certificado é usado depois nos manifests de Ingress das aplicações.
+8. **SigNoz via Helm** (`signoz-helm.tf`): instalado por último, depende do cluster, do addons e do IngressClass estarem prontos para expor o SigNoz via ALB.
+
+O Terraform resolve essa ordem automaticamente pelo grafo de dependências (outputs referenciados + `depends_on`); a lista acima é apenas a leitura lógica do `terraform plan`.
 
 ### Comandos Terraform (via Makefile)
 
@@ -208,7 +327,7 @@ API REST em Go que busca uma piada aleatória em `api.chucknorris.io`, persiste 
 
 - **Porta:** 8000
 - **Namespace K8s:** `calculator`
-- **ECR:** `joke-factor` *(repo a criar)*
+- **ECR:** `joke-factor`
 - **Endpoint de health:** `GET /health`
 - **Endpoint principal:** `GET /joke`
 - **Variáveis de ambiente:** `DB_*` para o MySQL, `OTEL_EXPORTER_OTLP_ENDPOINT`
@@ -232,8 +351,8 @@ Um único MySQL compartilhado pelos dois serviços Go:
 | `infra-prd.yml` | Manual (`workflow_dispatch`) | prd (us-east-1) |
 
 O workflow reutilizável `terraform.yml` executa dois jobs em sequência:
-1. **validate** — `make ci-validate` (sem credenciais AWS)
-2. **deploy** — `make plan` + `make apply` ou `make destroy-plan` + `make destroy`
+1. **validate** - `make ci-validate` (sem credenciais AWS)
+2. **deploy** - `make plan` + `make apply` ou `make destroy-plan` + `make destroy`
 
 ### Aplicações
 
@@ -241,14 +360,14 @@ O workflow reutilizável `terraform.yml` executa dois jobs em sequência:
 |---|---|---|
 | `api-lab-calculadora-api.yml` | Push em `lab` com path `src/go-calculator/**` ou manual | lab |
 | `api-prd-calculadora-api.yml` | Push em `main` com path `src/go-calculator/**` ou manual | prd |
+| `api-lab-joke-factor.yml` | Push em `lab` com path `src/joke-factor/**` ou manual | lab |
+| `api-prd-joke-factor.yml` | Push em `main` com path `src/joke-factor/**` ou manual | prd |
 | `front-lab-magic-calculator.yml` | Push em `lab` com path `src/magic-calculator/**` ou manual | lab |
 | `front-prd-magic-calculator.yml` | Push em `main` com path `src/magic-calculator/**` ou manual | prd |
 
-> **Pendente:** criar workflows para o `joke-factor` (lab e prd) e o ECR repo correspondente.
-
 O workflow reutilizável `ci-cd.yml` executa dois jobs em sequência:
-1. **CI** — build da imagem Docker e push para o ECR
-2. **CD** — substituição dos placeholders nos manifestos e deploy no EKS via `kubectl apply`
+1. **CI** - build da imagem Docker e push para o ECR
+2. **CD** - substituição dos placeholders nos manifestos e deploy no EKS via `kubectl apply`
 
 ### Secrets necessários no GitHub
 
@@ -259,7 +378,7 @@ O workflow reutilizável `ci-cd.yml` executa dois jobs em sequência:
 | `DB_USER` | Usuário do banco de dados |
 | `DB_PASSWORD` | Senha do banco de dados |
 | `DB_HOST` | Endpoint do RDS MySQL |
-| `CERTIFICATE_ARN` | ARN do certificado ACM (output do Terraform) — usado no Ingress do frontend |
+| `CERTIFICATE_ARN` | ARN do certificado ACM (output do Terraform), que é usado no Ingress do frontend |
 | `DOCKERHUB_USERNAME` | Usuário do Docker Hub (evita rate limit de pull anônimo) |
 | `DOCKERHUB_TOKEN` | Access Token do Docker Hub (gerado em Account Settings → Security) |
 
@@ -321,4 +440,4 @@ O SigNoz é acessível via ALB externo após o provisionamento. O OTel Collector
 
 - [Chuck Norris API](https://api.chucknorris.io/)
 - [go-chi/chi - router HTTP para Go](https://github.com/go-chi/chi)
-- [Flask — framework web Python](https://flask.palletsprojects.com/)
+- [Flask - framework web Python](https://flask.palletsprojects.com/)
