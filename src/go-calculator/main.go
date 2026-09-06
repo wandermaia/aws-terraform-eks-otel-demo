@@ -335,7 +335,7 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 		span.SetStatus(codes.Error, err.Error())
 		span.End()
 		totalErros.Inc()
-		log.Printf("Erro ao inserir no banco de dados: %v", err)
+		log.Printf("Erro ao inserir no banco de dados: %v ", err)
 		http.Error(w, "Erro ao inserir no banco de dados", http.StatusInternalServerError)
 		return
 	}

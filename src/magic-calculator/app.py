@@ -133,7 +133,7 @@ def index():
 
         # Valida o tamanho mínimo do nome antes de chamar a API
         if len(nome) < 3:
-            return render_template('index.html', error='Nome deve ter pelo menos 3 caracteres. ')
+            return render_template('index.html', error='Nome deve ter pelo menos 3 caracteres.')
 
         # Garante que os operandos são inteiros válidos.
         try:
