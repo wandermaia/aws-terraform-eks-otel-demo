@@ -34,6 +34,10 @@ terraform state list | grep -E 'helm_release'
 terraform state rm 'helm_release.signoz'
 terraform state rm 'module.eks_blueprints_addons.module.metrics_server.helm_release.this[0]'
 
+
+# Deletar o namespace se entrar em estado "Terminating"
+TERMINATING_NAMESPACE=signoz && echo "Force Terminating: ${TERMINATING_NAMESPACE}..." && echo "${TERMINATING_NAMESPACE}" != "" && kubectl get namespace ${TERMINATING_NAMESPACE} -o json | jq 'del(.spec.finalizers)' | kubectl replace --raw "/api/v1/namespaces/${TERMINATING_NAMESPACE}/finalize" -f -
+
 ```
 
 
