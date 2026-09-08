@@ -140,7 +140,7 @@ def index():
             operador1 = int(operador1)
             operador2 = int(operador2)
         except ValueError:
-            return render_template('index.html', error='Operadores devem ser números inteiros!')
+            return render_template('index.html', error='Operadores devem ser números inteiros! ')
 
         data = {'nome': nome, 'operador1': operador1, 'operador2': operador2}
         headers = {'Content-Type': 'application/json'}

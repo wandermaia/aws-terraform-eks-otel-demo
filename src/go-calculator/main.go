@@ -247,7 +247,7 @@ func fetchJoke(ctx context.Context) (string, error) {
 	if err := json.NewDecoder(resp.Body).Decode(&jokeResp); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
-		return "", fmt.Errorf("erro ao decodificar resposta do joke-factor: %w", err)
+		return "", fmt.Errorf("erro ao decodificar resposta do joke-factor: %w ", err)
 	}
 
 	span.SetStatus(codes.Ok, "")
